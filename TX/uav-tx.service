@@ -1,0 +1,27 @@
+[Unit]
+Description=UAV TX supervisor (RZ/V2H autonomous video+detection link)
+# Start as soon as the multi-user system is up. The supervisor has its own
+# WAIT_NIC loop, so it tolerates the wlx USB dongle appearing late -- it just
+# sits in WAIT_NIC until the NIC has an IP, then becomes DISCOVERABLE.
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+# Needs root for SO_BINDTODEVICE on the wlx NIC and for the camera/engine.
+User=root
+# Deployed location on the board:
+WorkingDirectory=/home/ubuntu/uav_release/TX
+ExecStart=/usr/bin/python3 /home/ubuntu/uav_release/TX/uav_tx.py
+# Keep it alive no matter what: if the supervisor itself ever dies, restart.
+Restart=always
+RestartSec=3
+# Don't kill the whole process group on stop -- the supervisor cleans up its
+# own engine child via the tracked PID. Send SIGTERM to the python only.
+KillMode=mixed
+TimeoutStopSec=15
+StandardOutput=append:/home/ubuntu/uav_release/TX/logs/uav_tx.service.log
+StandardError=append:/home/ubuntu/uav_release/TX/logs/uav_tx.service.log
+
+[Install]
+WantedBy=multi-user.target
