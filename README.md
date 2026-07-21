@@ -33,6 +33,46 @@ IP network the board and the viewer are already on.
   boot. The ground side is a small console app: discover, connect, start,
   stop.
 
+## Architecture
+
+What the image actually passes through, hardware-wise, from sensor to
+displayed frame:
+
+```mermaid
+flowchart LR
+    subgraph TX["RZ/V2H board"]
+        CAM["CSI-2 Camera\nTEVS/TEVM-AR0234\n1080p60"] --> CRU["CRU\nhardware capture\nzero-copy DMA"]
+        CRU --> NPU["DRP-AI3 NPU\nYOLOX detection\n~20Hz, own thread"]
+        CRU --> H265["H.265 hardware\nencoder"]
+        IMU["IMU\nroll, over I2C"] --> SEI
+        NPU -->|detection boxes\nvia IPC| SEI["SEI mux\nboxes + roll ->\nHEVC SEI NAL"]
+        H265 --> SEI
+        SEI --> RTP["RTP/UDP :50010"]
+        AQC["AQC\nbitrate/fps ladder"] -.->|adjust| H265
+    end
+
+    RTP -->|ordinary IP network| DEC
+
+    subgraph RX["Ground station"]
+        DEC["GStreamer HW decode\nnvh265dec"] --> EXTRACT["SEI extract"]
+        EXTRACT --> OVERLAY["Box overlay +\nhorizon lock"]
+        OVERLAY --> DISPLAY["Display +\nrecording"]
+        DISPLAY -.->|loss%, signal| FB["Feedback :50013"]
+    end
+
+    FB -.->|ordinary IP network| AQC
+```
+
+The camera→CRU→encoder path and the CRU→NPU path both read the same
+zero-copy DMA-BUF frame — the NPU never blocks or slows down the video
+path, it just reads whatever's currently in the ring on its own schedule.
+Detection boxes and IMU roll ride inside the H.265 stream itself as SEI
+data, not a separate channel, so they can never drift out of sync with the
+picture they describe. The dotted path is the only thing that crosses the
+network in the reverse direction: the ground station's measured loss/signal
+quality feeds back into the board's encoder so it can back off bitrate
+before the link actually breaks, rather than after.
+
 ## Why two processes
 
 `app_m5` (camera capture + DRP-AI inference) and `capture_encoder_m5` (GStreamer
