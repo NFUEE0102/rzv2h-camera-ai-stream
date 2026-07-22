@@ -181,6 +181,27 @@ Python bindings (`gi`, `Gst`) and, on the RX/viewer machine, a working
 `nvh265dec` (GPU-accelerated H.265 decode) — pure-software decode
 (`avdec_h265`) can't reliably hold 1080p60 on modest hardware.
 
+### Planned: move to the RDK's documented CMake cross-build
+
+The `renesas-rdk` Docker cross-build environment (built around the same
+`ros2_cross_build_container` used for ROS 2 packages) also documents a
+**non-ROS2 CMake path**, which would replace the hand-gathered SDK flags
+above with something reproducible:
+
+```bash
+docker exec -it ros2_cross_build_container bash
+arm64-chroot apt install -y <whatever dev packages engine_*_src needs>
+mkdir build && cd build
+cmake .. -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAINS_WS/cross.cmake -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+```
+
+(Source: `chapter-4/renesas_ai_apps/cross_build_non_ros2_apps.html` in the
+RDK documentation.) **Not yet adopted** — this repo has no `CMakeLists.txt`
+yet, and neither `engine_app_src/` nor `engine_enc_src/` has been tried
+against this toolchain. Migrating to it is the next planned step for this
+project, to close the gap above properly instead of documenting around it.
+
 ## Known rough edges
 
 - `rx_config.py`/`tx_config.py` have real example IPs/ports from the
