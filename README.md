@@ -124,6 +124,10 @@ RX/
                             recording
   rx_config.py               ground-station config (interface, AP polling)
   link_proto.py              wire protocol shared with TX (byte-identical copy)
+
+ros2_bridge/               optional: republishes the bbox_udp sidecar (see
+                            below) as vision_msgs ROS 2 topics -- purely
+                            additive, see ros2_bridge/README.md
 ```
 
 `sei_box.h` and `enc_ipc.h` appear twice (once under each `engine_*_src/`)
