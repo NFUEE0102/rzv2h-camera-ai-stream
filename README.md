@@ -1,5 +1,7 @@
 # RZ/V2H Camera → AI Detection → H.265 Stream
 
+> Maintained by the **Power Conversion Technology Research Center**, Department of Electrical Engineering, National Formosa University — <https://nfuee0102.com> ｜ 國立虎尾科技大學 電機工程系 電能轉換技術研究中心
+
 A reference pipeline for the Renesas RZ/V2H RDK: capture a MIPI CSI-2 camera at
 1080p60, run object detection on the DRP-AI3 NPU concurrently, encode H.265 in
 hardware with the detection boxes embedded directly in the video stream, and
